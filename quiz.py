@@ -1,23 +1,49 @@
+import ctypes
 import pygame
 import sys
 from perguntas import perguntas
 
 #inicializacao do pygame
+largura = 1920
+altura = 1080
 pygame.init() 
-tela = pygame.display.set_mode((800, 500)) 
+
+ctypes.windll.user32.SetProcessDPIAware()
+true_res = (ctypes.windll.user32.GetSystemMetrics(0),ctypes.windll.user32.GetSystemMetrics(1))
+tela = pygame.display.set_mode((true_res))
+
+fundoInicial = pygame.image.load("assets/images/imagemDeFundo.png")
+
 pygame.display.set_caption("Meninas em STEM: As Goytatecs")
 clock = pygame.time.Clock() 
-font = pygame.font.SysFont("Arial", 24)
-smallFont = pygame.font.SysFont("Arial", 20) 
+#font = pygame.font.Font("MochiyPopOne-Regular.ttf", 36)
+corFonte = (60, 44, 92)
+fonteTitulo = pygame.font.Font("MochiyPopOne-Regular.ttf", 36)
+fontePergunta = pygame.font.Font("MochiyPopOne-Regular.ttf", 28)
+fonteOpcoes = pygame.font.Font("MochiyPopOne-Regular.ttf", 24)
+
+fundo = pygame.image.load("assets/images/imagemDeFundo.png").convert()
+balaoPergunta = pygame.image.load("assets/images/balaoFalaPersonagem.png").convert_alpha()
+botaoOpcao = pygame.image.load("assets/images/balaoOpcao.png").convert_alpha()
+botaoAvancar = pygame.image.load("assets/images/botaoAvancar.png").convert_alpha()
+decoracaoEstrela = pygame.image.load("assets/images/decoracaoEstrela.png").convert_alpha()
+balaoTitulo = pygame.image.load("assets/images/balaoTitulo.png").convert_alpha()
+personagemTecnologia = pygame.image.load("assets/images/personagemTec.png").convert_alpha()
+# personagemMatematica = pygame.image.load("assets/images/personagemMat.png").convert_alpha()
+# personagemEngenharia = pygame.image.load("assets/images/personagemEng.png").convert_alpha()
+personagemCiencia = pygame.image.load("assets/images/personagemCien.png").convert_alpha()
 
 #variaveis globais
+botaoAvancarRect = pygame.Rect(1633, 965, 108, 104)
+respondeu = False
 score = 0
-questaoAtual = 0 
 feedback = ""
-feedbackTimer = 0 
 areaAtual = None
 perguntasAtuais = []
 perguntaAtual = 0
+tituloQuiz = ""
+personagemAtual = None
+acertou = False
 
 #funcoes
 def draw_text_wrapped(surface, text, color, rect, font, line_spacing=5):
@@ -40,22 +66,25 @@ def draw_text_wrapped(surface, text, color, rect, font, line_spacing=5):
         y += font.get_height() + line_spacing
 
 def desenharTelaInicial():
-    imagemFundo = pygame.image.load("fundo.jpg")   
-    imagemFundo = pygame.transform.scale(imagemFundo, (800, 500)) 
-    tela.blit(imagemFundo, (0, 0))
+    tela.blit(fundo, (0, 0))
 
-    caixaTitulo = pygame.Rect(220, 80, 400, 80)
+    #balao titulo do jogo
+    caixaTitulo = pygame.Rect(0, 0, 730, 100)
+    caixaTitulo.center = (largura // 2, 250)
     pygame.draw.rect(tela, (255, 255, 255), caixaTitulo, border_radius=12)
-    titulo = font.render("Meninas em STEM: As Goytatecs", True, (0,0,0))
-    tela.blit(titulo, (280, 100))
+
+    #titulo jogo
+    titulo = fonteTitulo.render("Meninas em STEM: As Goytatecs", True, corFonte)
+    titulo_rect = titulo.get_rect(center=caixaTitulo.center)
+    tela.blit(titulo, titulo_rect)
     
-    botao_largura = 180
-    botao_altura = 60
-    espaco = 20
+    botao_largura = 200
+    botao_altura = 70
+    espaco = 30
 
     total_largura = (4 * botao_largura) + (3 * espaco)
-    x_inicial = (800 - total_largura) // 2  
-    y = 300
+    x_inicial = (largura - total_largura) // 2  
+    y = altura // 2
 
     global botaoTecnologia, botaoMatematica, botaoEngenharia, botaoCiencia
 
@@ -69,89 +98,149 @@ def desenharTelaInicial():
     pygame.draw.rect(tela, (255,255,255), botaoEngenharia, border_radius=10)
     pygame.draw.rect(tela, (255,255,255), botaoCiencia, border_radius=10)
 
-    tela.blit(smallFont.render("Tecnologia", True, (100,150,250)), (botaoTecnologia.x + 25, botaoTecnologia.y + 15))
-    tela.blit(smallFont.render("Matemática", True, (100,150,250)), (botaoMatematica.x + 25, botaoMatematica.y + 15))
-    tela.blit(smallFont.render("Engenharia", True, (100,150,250)), (botaoEngenharia.x + 25, botaoEngenharia.y + 15))
-    tela.blit(smallFont.render("Ciências", True, (100,150,250)), (botaoCiencia.x + 40, botaoCiencia.y + 15))
+    # Tecnologia
+    textoTec = fonteOpcoes.render("Tecnologia", True, corFonte)
+    textoTec_rect = textoTec.get_rect(center=botaoTecnologia.center)
+    tela.blit(textoTec, textoTec_rect)
+
+    # Matemática
+    textoMat = fonteOpcoes.render("Matemática", True, corFonte)
+    textoMat_rect = textoMat.get_rect(center=botaoMatematica.center)
+    tela.blit(textoMat, textoMat_rect)
+
+    # Engenharia
+    textoEng = fonteOpcoes.render("Engenharia", True, corFonte)
+    textoEng_rect = textoEng.get_rect(center=botaoEngenharia.center)
+    tela.blit(textoEng, textoEng_rect)
+
+    # Ciências
+    textoCien = fonteOpcoes.render("Ciências", True, corFonte)
+    textoCien_rect = textoCien.get_rect(center=botaoCiencia.center)
+    tela.blit(textoCien, textoCien_rect)
 
 def desenharPergunta(q):
-    tela.fill((240, 240, 240)) 
-    draw_text_wrapped(tela, q["pergunta"], (0,0,0), pygame.Rect(50, 50, 700, 100), font) 
-    
+    tela.blit(fundo, (0, 0))
+
+    #personagem do quiz 
+    if personagemAtual: 
+        tela.blit(personagemAtual, (106, 190))
+
+    #balao da pergunta
+    tela.blit(balaoTitulo, (640, 18))
+
+    #titulo quiz
+    tituloSurface = fonteTitulo.render(tituloQuiz, True, corFonte)
+    tituloRect = tituloSurface.get_rect(center=(960, 52))
+    tela.blit(tituloSurface, tituloRect)
+
+    #balao pergunta
+    tela.blit(balaoPergunta, (120, 750))
+
+    #botao avancar
+    if respondeu:
+        tela.blit(botaoAvancar, botaoAvancarRect)
+
+    #decoracao estrela
+    tela.blit(decoracaoEstrela, (1740, 870))
+
+    if not respondeu:
+        textoMostrar = q["pergunta"]
+        corTexto = corFonte
+    else:
+        textoMostrar = feedback
+        corTexto = (0, 150, 0) if acertou else (180, 0, 0)
+
+    draw_text_wrapped(tela, textoMostrar, corTexto, pygame.Rect(160, 850, 1600, 210), fontePergunta)
+
     #desenha opções
+    posicoes_y = [167, 307, 447, 587]
     for i, opcao in enumerate(q["opcoes"]): 
-        botao_rect = pygame.Rect(50, 150 + i*70, 600, 60) 
-        pygame.draw.rect(tela, (100, 150, 250), botao_rect, border_radius=8) 
+        y_pos = posicoes_y[i]
+
+        # desenhar balão PNG
+        tela.blit(botaoOpcao, (649, y_pos))
+
+        # texto dentro do balão
         draw_text_wrapped(
             tela,
             opcao,
-            (255, 255, 255),  
+            corFonte,
             pygame.Rect(
-                botao_rect.x + 10,        
-                botao_rect.y + 8,         
-                botao_rect.width - 20,    
-                botao_rect.height - 16    
+                669,              # margem interna X
+                y_pos + 15,       # margem interna Y
+                974,              # largura interna
+                80                # altura interna
             ),
-            smallFont,
-            line_spacing=2
+            fonteOpcoes,
+        line_spacing=2
         )
 
 def desenharResultado():
-    tela.fill((240, 240, 240))
-    resultadoSurface = font.render(
+    tela.blit(fundoInicial, (0, 0))
+
+    # Caixa resultado
+    caixaResultado = pygame.Rect(0, 0, 800, 120)
+    caixaResultado.center = (largura // 2, 250)
+    pygame.draw.rect(tela, (255,255,255), caixaResultado, border_radius=12)
+
+    resultadoSurface = fonteTitulo.render(
         f"Quiz finalizado! Pontuação: {score}/{len(perguntasAtuais)}",
         True,
-        (0, 0, 0)
+        corFonte
     )
-    tela.blit(resultadoSurface, (50, 200))
+    tela.blit(resultadoSurface, resultadoSurface.get_rect(center=caixaResultado.center))
 
-    pygame.draw.rect(tela, (100, 150, 250), (50, 280, 200, 50))
-    jogarNovamenteSurface = smallFont.render("Jogar Novamente", True, (255, 255, 255))
-    tela.blit(jogarNovamenteSurface, (80, 290))
+    # Botões
+    larguraBotao = 300
+    alturaBotao = 70
+    espaco = 40
 
-def checkClickInicio(posicao_click):
-    global estadoJogo, running
-    botaoJogar = pygame.Rect(250, 200, 300, 60)
-    botaoSair = pygame.Rect(250, 300, 300, 60)
+    global botaoJogarNovamente, botaoVoltarInicio
 
-    if botaoJogar.collidepoint(posicao_click):
-        estadoJogo = "jogo"
-    elif botaoSair.collidepoint(posicao_click):
-        running = False
+    botaoJogarNovamente = pygame.Rect(0, 0, larguraBotao, alturaBotao)
+    botaoJogarNovamente.center = (largura // 2, 400)
+
+    botaoVoltarInicio = pygame.Rect(0, 0, larguraBotao, alturaBotao)
+    botaoVoltarInicio.center = (largura // 2, 400 + alturaBotao + espaco)
+
+    pygame.draw.rect(tela, (255,255,255), botaoJogarNovamente, border_radius=10)
+    pygame.draw.rect(tela, (255,255,255), botaoVoltarInicio, border_radius=10)
+
+    textoJogar = fonteOpcoes.render("Jogar Novamente", True, corFonte)
+    textoVoltar = fonteOpcoes.render("Voltar ao Início", True, corFonte)
+
+    tela.blit(textoJogar, textoJogar.get_rect(center=botaoJogarNovamente.center))
+    tela.blit(textoVoltar, textoVoltar.get_rect(center=botaoVoltarInicio.center))
+
         
 def checkClickPerguntas(posicao_click):
-    global score, perguntaAtual, feedback, feedbackTimer, estadoJogo
+    global score, perguntaAtual, feedback, estadoJogo, respondeu, acertou
 
     pergunta = perguntasAtuais[perguntaAtual]
 
-    for i in range(4):
-        botao_area = pygame.Rect(50, 150 + i*70, 600, 60)
+    posicoes_y = [167, 307, 447, 587]
 
-        if botao_area.collidepoint(posicao_click):
+    for i in range(4):
+        botao_area = pygame.Rect(
+            649,
+            posicoes_y[i],
+            1014,
+            112
+        )
+
+        if botao_area.collidepoint(posicao_click) and not respondeu:
+
+            respondeu = True
 
             # Acertou
             if i == pergunta["resposta"]:
                 score += 1
-                feedback = pergunta["justificativas"][i]
+                acertou = True
             else:
-                feedback = pergunta["justificativas"][i]
+                acertou = False
 
-            feedbackTimer = pygame.time.get_ticks()
-
+            feedback = pergunta["justificativas"][i]
             break
-
-def checkClickJogarNovamente(clik):
-    global score, perguntaAtual, feedback, feedbackTimer, estadoJogo
-    botaoAreaJogarNovamente = pygame.Rect(50, 280, 200, 50)
-   
-    if botaoAreaJogarNovamente.collidepoint(clik):
-        score = 0
-        perguntaAtual = 0
-        feedback = ""
-        feedbackTimer = 0
-        estadoJogo = "jogo"
-        print("Clicou no botao Jogar Novamente!")
-
 
 #loop principal
 estadoJogo = "tela_inicial"
@@ -172,6 +261,8 @@ while running:
                 areaAtual = "tecnologia"
                 perguntasAtuais = perguntas["tecnologia"]
                 perguntaAtual = 0
+                tituloQuiz = "Quiz de Tecnologia"
+                personagemAtual = personagemTecnologia
                 score = 0
                 estadoJogo = "jogo"
 
@@ -179,6 +270,8 @@ while running:
                 areaAtual = "matematica"
                 perguntasAtuais = perguntas["matematica"]
                 perguntaAtual = 0
+                tituloQuiz = "Quiz de Matemática"
+                personagemAtual = personagemTecnologia
                 score = 0
                 estadoJogo = "jogo"
 
@@ -186,6 +279,8 @@ while running:
                 areaAtual = "engenharia"
                 perguntasAtuais = perguntas["engenharia"]
                 perguntaAtual = 0
+                tituloQuiz = "Quiz de Engenharia"
+                personagemAtual = personagemEngenharia
                 score = 0
                 estadoJogo = "jogo"
 
@@ -193,36 +288,45 @@ while running:
                 areaAtual = "ciencia"
                 perguntasAtuais = perguntas["ciencia"]
                 perguntaAtual = 0
+                tituloQuiz = "Quiz de Ciências"
+                personagemAtual = personagemCiencia
                 score = 0
                 estadoJogo = "jogo"
 
         elif estadoJogo == "jogo" and evento.type == pygame.MOUSEBUTTONDOWN:
             mouse = pygame.mouse.get_pos()
+
+            #tenta clicar nas opcaos
             checkClickPerguntas(mouse)
+
+            # depois verifica botão avançar
+            if respondeu and botaoAvancarRect.collidepoint(mouse):
+                perguntaAtual += 1
+                respondeu = False
+                feedback = ""
+
+                if perguntaAtual >= len(perguntasAtuais):
+                    estadoJogo = "resultado"
 
         elif estadoJogo == "resultado" and evento.type == pygame.MOUSEBUTTONDOWN:
             mouse = pygame.mouse.get_pos()
-            checkClickJogarNovamente(mouse)
+
+            if botaoJogarNovamente.collidepoint(mouse):
+                perguntaAtual = 0
+                score = 0
+                respondeu = False
+                feedback = ""
+                estadoJogo = "jogo"
+
+            elif botaoVoltarInicio.collidepoint(mouse):
+                estadoJogo = "tela_inicial"
 
     #telas
     if estadoJogo == "jogo":
-        if perguntaAtual < len(perguntasAtuais):
-            desenharPergunta(perguntasAtuais[perguntaAtual])
-        else:
-            desenharResultado()
+        desenharPergunta(perguntasAtuais[perguntaAtual])
+
     elif estadoJogo == "resultado":
         desenharResultado()
-
-    #feedback
-    if feedback != "":
-        tempoExecucao = pygame.time.get_ticks()
-        if tempoExecucao - feedbackTimer < 2000:
-            draw_text_wrapped(tela, feedback, (255, 0, 0), pygame.Rect(50, 430, 700, 80), smallFont)
-        else:
-            feedback = ""
-            perguntaAtual += 1
-            if questaoAtual >= len(perguntasAtuais):
-                estadoJogo = "resultado"
 
     pygame.display.update()
     clock.tick(60)

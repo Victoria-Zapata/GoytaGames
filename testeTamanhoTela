@@ -1,0 +1,46 @@
+import ctypes
+
+import pygame
+import sys
+import os
+
+# Inicializa o pygame
+pygame.init()
+
+ctypes.windll.user32.SetProcessDPIAware()
+true_res = (ctypes.windll.user32.GetSystemMetrics(0),ctypes.windll.user32.GetSystemMetrics(1))
+tela = pygame.display.set_mode((true_res))
+fundoInicial = pygame.image.load("assets/images/imagemDeFundo.png")
+tela.blit(fundoInicial, (0, 0))
+
+os.environ['SDL_VIDEO_CENTERED'] = '1'
+info = pygame.display.Info()
+screen_width, screen_height = info.current_w, info.current_h
+
+# Define tamanho da tela
+largura = 900
+altura = 800
+#tela = pygame.display.set_mode((screen_width - 10, screen_height - 50), pygame.FULLSCREEN)
+
+# Título da janela
+pygame.display.set_caption("Minha Primeira Tela")
+
+# Cor de fundo (RGB)
+cor_fundo = (30, 30, 60)
+
+# Loop principal
+rodando = True
+while rodando:
+    for evento in pygame.event.get():
+        if evento.type == pygame.QUIT:
+            rodando = False
+
+    # Preenche a tela com a cor
+    tela.blit(fundoInicial, (0, 0))
+
+    # Atualiza a tela
+    pygame.display.flip()
+
+# Fecha o pygame corretamente
+pygame.quit()
+sys.exit()
